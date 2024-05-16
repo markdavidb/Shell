@@ -13,9 +13,18 @@ int main()
 
 	char command[COMMAND_LENGTH];
 	char commandPath[COMMAND_PATH];
+
 	int pid;
 	int status;
+
+
 	char *path = getenv("PATH");
+	if (path == NULL)
+	{
+		printf("PATH not found\n");
+		exit(1);
+	}
+
 	char pathCopy[strlen(path) + 1];
 	strcpy(pathCopy, path);
 
@@ -25,7 +34,7 @@ int main()
 
 	while (1)
 	{
-		printf("shell:~$");
+		printf("Shell$ ");
 		fgets(command, COMMAND_LENGTH, stdin);
 
 		command[strlen(command) - 1] = '\0'; // remove newline
@@ -39,7 +48,7 @@ int main()
 
 		token = strtok(command, " ");
 		
-		while (token != NULL)
+		while (token != NULL) // command and his arguments
 		{
 			params[paramsCounter] = token;
 			paramsCounter++;
