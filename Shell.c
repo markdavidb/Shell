@@ -17,7 +17,6 @@ int main()
 	int pid;
 	int status;
 
-
 	char *path = getenv("PATH");
 	if (path == NULL)
 	{
@@ -34,7 +33,8 @@ int main()
 
 	while (1)
 	{
-		printf("Shell$ ");
+
+		printf("\033[1;34mShell$ \033[0m");
 		fgets(command, COMMAND_LENGTH, stdin);
 
 		command[strlen(command) - 1] = '\0'; // remove newline
@@ -47,7 +47,7 @@ int main()
 		}
 
 		token = strtok(command, " ");
-		
+
 		while (token != NULL) // command and his arguments
 		{
 			params[paramsCounter] = token;
@@ -75,17 +75,16 @@ int main()
 				token = strtok(NULL, ":");
 			}
 
-			printf("Command not found, try again\n");
+			printf("\033[1;31mCommand not found, try again\033[0m\n");
+
 			exit(0);
 		}
 		else
 		{
 			wait(&status);
-			
+			memset(params, 0, sizeof(params));
+			paramsCounter = 0;
 		}
-
-		memset(params, 0, sizeof(params));
-		paramsCounter = 0;
 	}
 
 	return 0;
