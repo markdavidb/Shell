@@ -7,85 +7,113 @@
 
 #define COMMAND_LENGTH 100
 #define COMMAND_PATH 1000
+#define RED "\033[1;31m"
+#define DARK_BLUE "\033[1;34m"
+#define RESET "\033[0m"
 
 int main()
 {
+    char command[COMMAND_LENGTH];
+    char commandPath[COMMAND_PATH];
 
-	char command[COMMAND_LENGTH];
-	char commandPath[COMMAND_PATH];
+    int pid;
+    int status;
 
-	int pid;
-	int status;
+    char *path = getenv("PATH");
+    if (path == NULL)
+    {
+        printf("PATH not found\n");
+        exit(1);
+    }
 
-	char *path = getenv("PATH");
-	if (path == NULL)
-	{
-		printf("PATH not found\n");
-		exit(1);
-	}
+    char pathCopy[strlen(path) + 1];
+    strcpy(pathCopy, path);
 
-	char pathCopy[strlen(path) + 1];
-	strcpy(pathCopy, path);
+    char *token;
+    char *params[COMMAND_LENGTH];
+    int paramsCounter = 0;
 
-	char *token;
-	char *params[COMMAND_LENGTH];
-	int paramsCounter = 0;
+    while (1)
+    {
+        printf(DARK_BLUE "Shell$" RESET " ");
+        fgets(command, COMMAND_LENGTH, stdin);
 
-	while (1)
-	{
+        command[strlen(command) - 1] = '\0'; // remove newline
 
-		printf("\033[1;34mShell$ \033[0m");
-		fgets(command, COMMAND_LENGTH, stdin);
+        if (strcmp(command, "leave") == 0)
+        {
+            printf("As you wish, goodbye!\n");
+            exit(0);
+        }
 
-		command[strlen(command) - 1] = '\0'; // remove newline
+        token = strtok(command, " ");
+        
+        // Reset paramsCounter for each command
+        paramsCounter = 0;
 
-		if (strcmp(command, "leave") == 0)
-		{
+        while (token != NULL) // command and its arguments
+        {
+            params[paramsCounter] = token;
+            paramsCounter++;
+            token = strtok(NULL, " ");
+        }
+        params[paramsCounter] = NULL;
 
-			printf("As you wish, goodbye!\n");
-			exit(0);
-		}
+        // Handle cd command
+        if (strcmp(params[0], "cd") == 0)
+        {
+            if (params[1] == NULL)
+            {
+                fprintf(stderr, "cd: is missing an argument\n");
+            }
+            else
+            {
+                if (chdir(params[1]) != 0)
+                {
+                    perror("cd");
+                }
+            }
+            continue; // Skip the child fork and start the next iteration
+        }
 
-		token = strtok(command, " ");
+        if ((pid = fork()) == 0)
+        {
+            // Child process
+            if (params[0][0] == '/' || strncmp(params[0], "./", 2) == 0 || strncmp(params[0], "../", 3) == 0)
+            {
+                // If the command is an absolute or relative path, execute it directly
+                execv(params[0], params);
+            }
+            else
+            {
+                // Search for the command in all paths
+                token = strtok(pathCopy, ":");
 
-		while (token != NULL) // command and his arguments
-		{
-			params[paramsCounter] = token;
-			paramsCounter++;
-			token = strtok(NULL, " ");
-		}
-		params[paramsCounter] = NULL;
+                while (token != NULL)
+                {
+                    commandPath[0] = 0;
 
-		if ((pid = fork()) == 0)
-		{
+                    strcat(commandPath, token);
+                    strcat(commandPath, "/");
+                    strcat(commandPath, params[0]);
 
-			token = strtok(pathCopy, ":");
+                    execv(commandPath, params);
 
-			while (token != NULL) // here we search for the command in the all paths
-			{
+                    token = strtok(NULL, ":");
+                }
 
-				commandPath[0] = 0;
+                printf(RED "Command not found, try again" RESET "\n");
+            }
 
-				strcat(commandPath, token);
-				strcat(commandPath, "/");		// add / to the end of the path
-				strcat(commandPath, params[0]); // add the command after / so it will look like usr/bin/command
+            exit(0);
+        }
+        else
+        {
+            // Parent process
+            wait(&status);
+            memset(params, 0, sizeof(params));
+        }
+    }
 
-				execv(commandPath, params);
-
-				token = strtok(NULL, ":");
-			}
-
-			printf("\033[1;31mCommand not found, try again\033[0m\n");
-
-			exit(0);
-		}
-		else
-		{
-			wait(&status);
-			memset(params, 0, sizeof(params));
-			paramsCounter = 0;
-		}
-	}
-
-	return 0;
+    return 0;
 }
