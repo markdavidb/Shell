@@ -35,7 +35,7 @@ int main()
 
     while (1)
     {
-        printf(DARK_BLUE "Shell$" RESET " ");
+        printf(DARK_BLUE "Shell" RESET "$ ");
         fgets(command, COMMAND_LENGTH, stdin);
 
         command[strlen(command) - 1] = '\0'; // remove newline
